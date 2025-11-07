@@ -144,6 +144,27 @@ python main.py --voice "Deep_Voice_Man" --text "This is a test of the text-to-sp
 - `--list-voices`: List all available voice IDs
 - `--poll-interval`: Seconds to wait between status checks (default: 2)
 
+## Voice Configuration File
+
+All voice definitions are now in a separate `voices.py` file, making it easy to manage without editing the main code.
+
+**To add/remove/edit voices:**
+1. Simply edit the `voices.py` file
+2. Modify the `CUSTOM_VOICES` dictionary for your custom voices
+3. The `BUILTIN_VOICES` list contains all fal.ai default voices
+
+**File Structure:**
+- `voices.py` - All voice definitions in one place
+- `main.py` - Main application logic
+- `rich_version.py` - Rich TUI interface
+- `textual_version.py` - Textual TUI interface
+
+This separation makes it easy to:
+- Add custom voices without touching application code
+- Version control your voice preferences
+- Share voice configurations between different versions
+- Keep voice management separate from functionality
+
 ## Managing Voices
 
 ### Custom Voices (Your Trained Voices)
@@ -158,10 +179,10 @@ python main.py --voice "your_voice_id" --text "test"
 
 If it works (generates audio successfully), proceed to add it:
 
-**Step 2: Add to CUSTOM_VOICES**
-1. Edit `main.py`
-2. Find the `CUSTOM_VOICES` dictionary (around line 19)
-3. Uncomment and modify the template:
+**Step 2: Add to voices.py**
+1. Edit `voices.py`
+2. Find the `CUSTOM_VOICES` dictionary
+3. Add your voice using this format:
    ```python
    CUSTOM_VOICES = {
        "your_working_voice_id": "Your Display Name",

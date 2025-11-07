@@ -19,9 +19,8 @@ import subprocess
 import sys
 import os
 
-# Import voice data from main.py
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from main import CUSTOM_VOICES, BUILTIN_VOICES, ALL_VOICE_IDS
+# Import voice data from voices.py
+from voices import CUSTOM_VOICES, BUILTIN_VOICES, ALL_VOICE_IDS
 
 
 class TextualTTSApp(App):
