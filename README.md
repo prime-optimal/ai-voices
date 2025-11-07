@@ -95,15 +95,24 @@ python main.py --voice "Lively_Girl" --text "Hello everyone!" --api-key "your-ap
 
 When no custom output is specified, files follow this pattern:
 
+**For Custom Voices (using display name):**
+```
+{voice_display_name}-{YYYY-MM-DD}-{text}.mp3
+```
+- **Example**: `joe_rogan-2025-11-06-whats_up_party_people.mp3`
+- **Note**: Uses the display name from CUSTOM_VOICES, not the voice ID!
+
+**For Built-in Voices (using voice ID):**
 ```
 {voice_id}-{YYYY-MM-DD}-{text}.mp3
 ```
+- **Example**: `deep_voice_man-2025-11-06-this_is_a_test.mp3`
 
-- **voice_id**: Converted to lowercase, special characters replaced with underscores
+**General Rules:**
+- **Name**: Converted to lowercase, special characters replaced with underscores
 - **YYYY-MM-DD**: Current date
 - **text**: Sanitized version of your input text (alphanumeric, spaces, hyphens, underscores only)
 - **Maximum length**: 100 characters (text part is truncated if needed)
-- **Example**: `deep_voice_man-2025-10-31-this_is_a_test.mp3`
 
 ## Examples
 

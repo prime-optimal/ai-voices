@@ -138,10 +138,11 @@ def get_result(response_url, api_key):
     return response.json()
 
 
-def generate_filename(voice_id, text, default_output="output.mp3"):
-    """Generate a filename based on voice ID and text with naming convention.
+def generate_filename(voice_id, display_name, text, default_output="output.mp3"):
+    """Generate a filename based on voice and text with naming convention.
 
-    Format: {voice_id}-{YYYY-MM-DD}-{text}.mp3
+    Format: For custom voices: {display_name}-{YYYY-MM-DD}-{text}.mp3
+            For built-in voices: {voice_id}-{YYYY-MM-DD}-{text}.mp3
     Maximum filename length: 100 characters
     """
     from datetime import datetime
@@ -149,8 +150,13 @@ def generate_filename(voice_id, text, default_output="output.mp3"):
     # Get current date
     date_str = datetime.now().strftime("%Y-%m-%d")
 
-    # Sanitize voice ID for filename (lowercase, replace spaces/special chars with underscore)
-    safe_voice_id = "".join(c if c.isalnum() else "_" for c in voice_id.lower())
+    # Use display name for custom voices, voice_id for built-in voices
+    if display_name != voice_id:
+        # This is a custom voice - use the display name (sanitized)
+        voice_identifier = "".join(c if c.isalnum() else "_" for c in display_name.lower())
+    else:
+        # This is a built-in voice - use the voice ID (sanitized)
+        voice_identifier = "".join(c if c.isalnum() else "_" for c in voice_id.lower())
 
     # Sanitize text for filename
     # Remove or replace special characters, keep alphanumeric and spaces
@@ -164,30 +170,30 @@ def generate_filename(voice_id, text, default_output="output.mp3"):
     safe_text = safe_text.strip("_")
 
     # Calculate available space for text
-    # Format: {voice_id}-{date}-{text}.mp3
-    # voice_id + "-" + date + "-" + text + ".mp3"
+    # Format: {voice_identifier}-{date}-{text}.mp3
+    # voice_identifier + "-" + date + "-" + text + ".mp3"
     # 100 max total
     date_part = len(date_str)  # YYYY-MM-DD = 10 chars
     extension_part = 4  # .mp3 = 4 chars
     separators = 2  # two hyphens
-    voice_part = len(safe_voice_id)
+    voice_part = len(voice_identifier)
 
     # Available for text
     available_for_text = 100 - date_part - extension_part - separators - voice_part
 
     # Ensure we have at least some text
     if available_for_text < 1:
-        # Voice ID is too long, truncate it
+        # Voice identifier is too long, truncate it
         max_voice_len = 100 - date_part - extension_part - separators - 1
-        safe_voice_id = safe_voice_id[:max_voice_len]
-        available_for_text = 100 - date_part - extension_part - separators - len(safe_voice_id)
+        voice_identifier = voice_identifier[:max_voice_len]
+        available_for_text = 100 - date_part - extension_part - separators - len(voice_identifier)
 
     # Truncate text if needed
     if len(safe_text) > available_for_text:
         safe_text = safe_text[:available_for_text].rstrip("_")
 
     # Construct filename
-    filename = f"{safe_voice_id}-{date_str}-{safe_text}.mp3"
+    filename = f"{voice_identifier}-{date_str}-{safe_text}.mp3"
 
     return filename
 
@@ -330,7 +336,7 @@ Environment Variables:
         output_file = args.output
         if output_file == "output.mp3":
             # User didn't specify custom output, use naming convention
-            output_file = generate_filename(voice_id, text)
+            output_file = generate_filename(voice_id, display_name, text)
             print(f"📝 Using auto-generated filename: {output_file}\n")
 
         # Submit request

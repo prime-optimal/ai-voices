@@ -18,6 +18,35 @@ CUSTOM_VOICES = {
 }
 ```
 
+## 📁 File Naming Convention
+
+**For Custom Voices:**
+Uses the display name (sanitized) instead of voice ID!
+
+```python
+# If you have:
+CUSTOM_VOICES = {
+    "voicedb78eca71747381369": "Joe Rogan",
+}
+
+# Generated file will be:
+joe_rogan-2025-11-06-your_text_here.mp3
+#      ↑^^^^^^^^^  (display name, not voice ID!)
+```
+
+**For Built-in Voices:**
+Uses the voice ID (sanitized) as before.
+
+```python
+# Built-in voice: Wise_Woman
+wise_woman-2025-11-06-your_text_here.mp3
+```
+
+**Benefits:**
+- ✅ No more cryptic voice IDs in filenames
+- ✅ Easy to identify which voice was used
+- ✅ Readable and user-friendly names
+
 ## 🗑️ Remove a Custom Voice
 
 **Option 1: Delete the line**
@@ -43,6 +72,8 @@ CUSTOM_VOICES = {}
 # After:
 "voicedb78": "The Joe Rogan Voice",
 ```
+
+**Note:** Changing the display name will change the filename!
 
 ## ✅ Test First!
 
