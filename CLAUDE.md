@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **command-line text-to-speech (TTS) generator**. It converts text into speech with MiniMax Speech 2.8 HD/Turbo or BytePlus TTS through **BudgetPixel**, the default provider, or with MiniMax through fal.ai (`--provider fal`). The default voice is `Robot_Armor`. Auto-named files are saved to `output/`.
+This is a **command-line text-to-speech (TTS) generator**. It converts text into speech with MiniMax through fal.ai, the default provider, or with MiniMax Speech 2.8 HD/Turbo or BytePlus TTS through **BudgetPixel** (`--provider budgetpixel`). Defaults: `DEFAULT_PROVIDER` / `DEFAULT_VOICES` in main.py (`Joe Rogan` on fal, `Robot_Armor` on BudgetPixel), overridable with `$PROVIDER` / `$VOICE` / `$MODEL`. Auto-named files are saved to `output/`.
 
 BudgetPixel's `bpx_` developer API has no speech models. `budgetpixel.py` therefore uses the web app API: it exchanges the `__Secure-next-auth.session-token` cookie (`BUDGETPIXEL_SESSION`, stored in fnox via age) at `https://budgetpixel.com/api/auth/session` for an `accessToken`. It then POSTs to `https://api.budgetpixel.com/api/v1/tts/generate` and polls `/api/v1/audios/history`. See README "Setup".
 
@@ -19,10 +19,10 @@ mise run install   # `uv tool install --editable --force .` → `voice` on PATH 
 
 ### Running the Application
 ```bash
-voice the dead are dancing tonight     # default voice, words joined as text
+voice what is up party people          # default voice (Joe Rogan on fal), words joined as text
 voice                                  # stdin prompt, Ctrl+D to finish
 voice --pick                           # interactive voice picker
-voice --list-voices --search robot
+voice --provider budgetpixel --list-voices --search robot
 voice --provider fal --voice "Joe Rogan" "Hello world"
 mise run say|voice|voices|models|login|install   # same, from the repo
 ```
@@ -126,9 +126,9 @@ Examples:
 - Voice ID validated against known list (warning shown if not found but still works)
 
 ### Configuration Options
-- `--provider` - `budgetpixel` (default) or `fal`
-- `--model` - BudgetPixel model (`speech-2.8-hd` default, `speech-2.8-turbo`, `byteplus-tts`)
-- `--voice` - Voice ID (default: `$VOICE`, `$DEFAULT_VOICE`, then `Robot_Armor`)
+- `--provider` - `fal` (default, or `$PROVIDER`) or `budgetpixel`
+- `--model` - BudgetPixel model (`speech-2.8-hd` default or `$MODEL`, `speech-2.8-turbo`, `byteplus-tts`)
+- `--voice` - Voice ID (default: `$VOICE`, else per-provider `DEFAULT_VOICES`)
 - `--pick` - Interactive voice picker
 - `words…` / `--text` - Text to convert (omitted → stdin prompt)
 - `--output` - Output file path (default: auto-generated filename in `--output-dir`)

@@ -1,12 +1,12 @@
 # AI Voices - Text-to-Speech Generator
 
-A command-line tool for generating speech from text with MiniMax Speech 2.8 (and BytePlus TTS) through [BudgetPixel](https://budgetpixel.com), the default provider, or through fal.ai.
+A command-line tool for generating speech from text with MiniMax through fal.ai, the default provider, or with MiniMax Speech 2.8 (and BytePlus TTS) through [BudgetPixel](https://budgetpixel.com).
 
 ## Features
 
-- **BudgetPixel provider (default)**: Speech 2.8 HD/Turbo and BytePlus TTS, with a searchable voice catalog
-- **fal.ai provider**: `--provider fal`, with custom voices from `voices.py` and 17 built-in voices
-- Default voice `Robot_Armor`
+- **fal.ai provider (default)**: custom voices from `voices.py` and 17 built-in voices
+- **BudgetPixel provider**: `--provider budgetpixel`, Speech 2.8 HD/Turbo and BytePlus TTS, with a searchable voice catalog
+- Default voice `Joe Rogan` on fal (`Robot_Armor` on BudgetPixel)
 - Files go to `output/` by default (`--output-dir` to change)
 - Automatic polling until the request completes, then the MP3 is downloaded
 
@@ -21,7 +21,7 @@ mise run install   # installs the `voice` command into ~/.local/bin
 
 ## Setup
 
-### BudgetPixel (default)
+### BudgetPixel (`--provider budgetpixel`)
 
 BudgetPixel's public API key (`bpx_…`) does not expose the speech models. Only the web app does, so the CLI authenticates with your web session:
 
@@ -44,10 +44,11 @@ BudgetPixel requires 10–5000 characters of text.
 ## Quick Generation
 
 ```bash
-voice the dead are dancing tonight          # default voice (Robot_Armor, Speech 2.8 HD); quotes optional
+voice what is up party people               # default voice (Joe Rogan on fal); quotes optional
 voice                                       # prompts for multi-line text, Ctrl+D to finish
 voice --pick                                # search voices interactively, pick one, enter text
-VOICE=Charming_Lady voice hello there       # one-off voice override
+VOICE=Wise_Woman voice hello there          # one-off voice override
+PROVIDER=budgetpixel voice hello there      # one-off provider (Robot_Armor default there)
 voice --provider fal --voice "Joe Rogan" "what's up party people"
 ```
 
@@ -56,16 +57,16 @@ Text with apostrophes needs quotes (or `\'`), since the shell reads it first.
 The same from inside the repo via mise:
 
 ```bash
-mise run say "the dead are dancing tonight"  # default voice
-VOICE="Charming_Lady" mise run say hello     # one-off voice override
-MODEL="speech-2.8-turbo" mise run say hello  # one-off model override
+mise run say "what's up party people"        # default voice
+VOICE="Wise_Woman" mise run say hello        # one-off voice override
+PROVIDER=budgetpixel MODEL="speech-2.8-turbo" mise run say hello  # BudgetPixel, Turbo model
 mise run voice                               # interactive voice picker
 mise run voices robot                        # list voices (optional search term)
 mise run models                              # list BudgetPixel models
 mise run login                               # store/refresh the BudgetPixel cookie
 ```
 
-The default voice is `$VOICE`, then `$DEFAULT_VOICE` (set to `Robot_Armor` in `mise.toml` for mise tasks), then `Robot_Armor`. Aliases: `mise run s`, `mise run v`. Files land in `output/`.
+The default provider is `$PROVIDER`, else `fal`. The default voice is `$VOICE`, else `Joe Rogan` on fal / `Robot_Armor` on BudgetPixel (`DEFAULT_PROVIDER` / `DEFAULT_VOICES` in `main.py`). Aliases: `mise run s`, `mise run v`. Files land in `output/`.
 
 ## Usage
 
@@ -95,9 +96,9 @@ When you don't specify `--output`, files are written to `output/` (or `--output-
 Example: `robot_armor-2026-10-30-hello_world.mp3` (max 100 characters)
 
 ```bash
-python main.py --voice "Robot_Armor" --text "Hello world, this is the robot"
-python main.py --voice "Charming_Lady" --model speech-2.8-turbo --text "Hello world"
-python main.py --provider fal --voice "Wise_Woman" --text "Hello world"
+python main.py --voice "Wise_Woman" --text "Hello world"
+python main.py --provider budgetpixel --voice "Robot_Armor" --text "Hello world, this is the robot"
+python main.py --provider budgetpixel --voice "Charming_Lady" --model speech-2.8-turbo --text "Hello world"
 ```
 
 ### Generate speech from stdin (multi-line text)
@@ -174,9 +175,9 @@ python main.py --voice "Deep_Voice_Man" --text "This is a test of the text-to-sp
 
 ## Command-line Options
 
-- `--provider`: `budgetpixel` (default) or `fal`
-- `--model`: BudgetPixel model: `speech-2.8-hd` (default), `speech-2.8-turbo`, `byteplus-tts`
-- `--voice`: Voice ID (default: `$VOICE`, `$DEFAULT_VOICE`, then `Robot_Armor`)
+- `--provider`: `fal` (default, or `$PROVIDER`) or `budgetpixel`
+- `--model`: BudgetPixel model: `speech-2.8-hd` (default, or `$MODEL`), `speech-2.8-turbo`, `byteplus-tts`
+- `--voice`: Voice ID (default: `$VOICE`, else `Joe Rogan` on fal / `Robot_Armor` on BudgetPixel)
 - `--pick`: Choose the voice from the interactive picker
 - `words…` / `--text`: Text to convert (plain trailing words, quotes optional; omitted → stdin prompt)
 - `--output`: Output file path (overrides `--output-dir`)

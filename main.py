@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-AI Voice Generator - Command-line text-to-speech tool (BudgetPixel Speech 2.8 HD by default, fal.ai MiniMax optionally)
+AI Voice Generator - Command-line text-to-speech tool (fal.ai MiniMax by default, BudgetPixel Speech 2.8 optionally)
 """
 
 import argparse
@@ -25,6 +25,8 @@ from voices import (
 APP_DIR = Path(__file__).resolve().parent
 OUTPUT_DIR = APP_DIR / "output"
 FNOX_CONFIG = APP_DIR / "fnox.toml"
+DEFAULT_PROVIDER = "fal"
+DEFAULT_VOICES = {"fal": "Joe Rogan", "budgetpixel": budgetpixel.DEFAULT_VOICE}
 
 
 def load_secret(name):
@@ -263,46 +265,46 @@ def run_fal(text, voice_id, api_key, poll_interval):
 
 def main():
     parser = argparse.ArgumentParser(
-        description="AI Voice Generator - Convert text to speech (BudgetPixel by default, or fal.ai)",
+        description="AI Voice Generator - Convert text to speech (fal.ai by default, or BudgetPixel)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Examples:
-  %(prog)s The dead are dancing tonight      (default voice, text as plain words)
-  %(prog)s --pick                            (search voices interactively)
+  %(prog)s what is up party people            (default voice, text as plain words)
+  %(prog)s --pick                            (choose a voice interactively)
+  %(prog)s --provider budgetpixel --voice Robot_Armor "The dead are dancing tonight"
+  %(prog)s --provider budgetpixel --list-voices --search robot
   %(prog)s --list-models
-  %(prog)s --list-voices --search robot
-  %(prog)s --model speech-2.8-turbo --voice Robot_Armor "Faster render"
-  %(prog)s --provider fal --voice "Joe Rogan" "Hello world"
 
 Files are saved to {OUTPUT_DIR} unless --output or --output-dir is given.
 No text → prompts for multi-line input (Ctrl+D to finish).
 
 Environment Variables (fall back to {FNOX_CONFIG} via fnox):
-  BUDGETPIXEL_SESSION  budgetpixel.com session cookie (provider budgetpixel)
   FAL_API_KEY          fal.ai API key (provider fal)
-  VOICE                Voice used when --voice is omitted (default: {budgetpixel.DEFAULT_VOICE})
+  BUDGETPIXEL_SESSION  budgetpixel.com session cookie (provider budgetpixel)
+  PROVIDER             Default provider (default: {DEFAULT_PROVIDER})
+  VOICE                Voice used when --voice is omitted (default: {DEFAULT_VOICES})
 """,
     )
 
     parser.add_argument(
         "--provider",
-        choices=["budgetpixel", "fal"],
-        default="budgetpixel",
-        help="TTS provider (default: budgetpixel)",
+        choices=list(DEFAULT_VOICES),
+        default=os.environ.get("PROVIDER") or DEFAULT_PROVIDER,
+        help=f"TTS provider (default: $PROVIDER or {DEFAULT_PROVIDER})",
     )
 
     parser.add_argument(
         "--model",
         choices=list(budgetpixel.TTS_MODELS),
-        default=budgetpixel.DEFAULT_MODEL,
-        help=f"BudgetPixel model (default: {budgetpixel.DEFAULT_MODEL})",
+        default=os.environ.get("MODEL") or budgetpixel.DEFAULT_MODEL,
+        help=f"BudgetPixel model (default: $MODEL or {budgetpixel.DEFAULT_MODEL})",
     )
 
     parser.add_argument(
         "--voice",
         type=str,
-        help="Voice ID (default: $VOICE or $DEFAULT_VOICE or "
-        f"{budgetpixel.DEFAULT_VOICE}; see --list-voices)",
+        help="Voice ID (default: $VOICE, else Joe Rogan on fal / "
+        f"{budgetpixel.DEFAULT_VOICE} on budgetpixel; see --list-voices)",
     )
 
     parser.add_argument(
@@ -390,11 +392,7 @@ Environment Variables (fall back to {FNOX_CONFIG} via fnox):
             sys.exit(1)
 
     if args.voice is None and not args.pick:
-        args.voice = (
-            os.environ.get("VOICE")
-            or os.environ.get("DEFAULT_VOICE")
-            or budgetpixel.DEFAULT_VOICE
-        )
+        args.voice = os.environ.get("VOICE") or DEFAULT_VOICES[args.provider]
 
     if use_bp:
         if args.voice is None:
