@@ -1,6 +1,6 @@
 [project]
 name = "ai-voices"
-version = "2.0.0"
+version = "2.1.0"
 description = "Command-line text-to-speech generator (BudgetPixel and fal.ai MiniMax voices)"
 readme = "README.md"
 requires-python = ">=3.14"
