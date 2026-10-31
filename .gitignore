@@ -14,3 +14,7 @@ wheels/
 
 # Audio output files
 *.mp3
+output/
+
+# fnox encrypted local cache
+fnox.local.toml

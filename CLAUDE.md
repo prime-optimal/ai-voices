@@ -4,7 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a **command-line text-to-speech (TTS) generator** that converts text (up to 5000 characters) into natural-sounding speech using the MiniMax Speech-02 HD AI model via the fal.ai platform. It's a single-file Python application focused on simplicity and ease of use.
+This is a **command-line text-to-speech (TTS) generator**. It converts text into speech with MiniMax Speech 2.8 HD/Turbo or BytePlus TTS through **BudgetPixel**, the default provider, or with MiniMax through fal.ai (`--provider fal`). The default voice is `Robot_Armor`. Auto-named files are saved to `output/`.
+
+BudgetPixel's `bpx_` developer API has no speech models. `budgetpixel.py` therefore uses the web app API: it exchanges the `__Secure-next-auth.session-token` cookie (`BUDGETPIXEL_SESSION`, stored in fnox via age) at `https://budgetpixel.com/api/auth/session` for an `accessToken`. It then POSTs to `https://api.budgetpixel.com/api/v1/tts/generate` and polls `/api/v1/audios/history`. See README "Setup".
 
 ## Common Commands
 
@@ -69,7 +71,8 @@ Use `python main.py --list-voices` to display all options.
 ## Code Architecture
 
 ### Project Structure
-- **main.py** - Single Python file containing the entire CLI application (382 lines)
+- **main.py** - CLI entry point, argument parsing, fal.ai provider
+- **budgetpixel.py** - BudgetPixel provider (models, voice catalog/search, generate, poll)
 - **pyproject.toml** - Project configuration and dependencies
 - **schema.json** - OpenAPI 3.0.4 specification for the MiniMax API
 - **llms.txt** - Model documentation from fal.ai
@@ -147,9 +150,13 @@ Examples:
 - Voice ID validated against known list (warning shown if not found but still works)
 
 ### Configuration Options
-- `--voice` - Voice ID (required)
+- `--provider` - `budgetpixel` (default) or `fal`
+- `--model` - BudgetPixel model (`speech-2.8-hd` default, `speech-2.8-turbo`, `byteplus-tts`)
+- `--voice` - Voice ID (omitted → interactive search)
 - `--text` - Text to convert (optional if using stdin)
-- `--output` - Output file path (default: auto-generated filename)
+- `--output` - Output file path (default: auto-generated filename in `--output-dir`)
+- `--output-dir` - Folder for auto-named files (default: `<repo>/output`)
+- `--list-models`, `--list-voices`, `--search` - Catalog listing
 - `--api-key` - fal.ai API key (or use FAL_API_KEY environment variable)
 - `--poll-interval` - Seconds between status checks (default: 2)
 

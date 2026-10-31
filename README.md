@@ -1,15 +1,14 @@
 # AI Voices - Text-to-Speech Generator
 
-A command-line tool for generating high-quality speech from text using the MiniMax Speech-02 HD AI model.
+A command-line tool for generating speech from text with MiniMax Speech 2.8 (and BytePlus TTS) through [BudgetPixel](https://budgetpixel.com), the default provider, or through fal.ai.
 
 ## Features
 
-- **Custom voices** - Use your trained voice models (primary)
-- **Built-in voices** - 17 fal.ai default voices (secondary)
-- Convert text to natural-sounding speech
-- Automatic request polling until completion
-- Download generated MP3 files
-- Simple command-line interface
+- **BudgetPixel provider (default)**: Speech 2.8 HD/Turbo and BytePlus TTS, with a searchable voice catalog
+- **fal.ai provider**: `--provider fal`, with custom voices from `voices.py` and 17 built-in voices
+- Default voice `Robot_Armor`
+- Files go to `output/` by default (`--output-dir` to change)
+- Automatic polling until the request completes, then the MP3 is downloaded
 
 ## Installation
 
@@ -28,54 +27,67 @@ pip install requests>=2.31.0
 
 ## Setup
 
-You'll need a fal.ai API key. You can get one at [fal.ai](https://fal.ai).
+### BudgetPixel (default)
 
-The key is stored encrypted in `fnox.toml` as `FAL_API_KEY`; the mise tasks below inject it automatically via `fnox exec`. To run `main.py` directly, use `fnox exec -- uv run main.py ...`, export `FAL_API_KEY`, or pass `--api-key`.
+BudgetPixel's public API key (`bpx_…`) does not expose the speech models. Only the web app does, so the CLI authenticates with your web session:
+
+1. Log in to [budgetpixel.com](https://budgetpixel.com) in your browser.
+2. Open DevTools → Application → Cookies → `https://budgetpixel.com` and copy the value of `__Secure-next-auth.session-token`.
+3. Store it encrypted: `fnox set BUDGETPIXEL_SESSION --provider age` (paste the value).
+
+The mise tasks inject it via `fnox exec`. To call `main.py` directly, run `fnox exec -- uv run main.py ...` or export `BUDGETPIXEL_SESSION`. When the cookie expires, the CLI reports `session is invalid or expired`. Repeat steps 1–3 to refresh it.
+
+BudgetPixel requires 10–5000 characters of text.
+
+### fal.ai
+
+`--provider fal` needs a fal.ai API key ([fal.ai](https://fal.ai)). It is stored in `fnox.toml` as `FAL_API_KEY`. Use `fnox exec`, export `FAL_API_KEY`, or pass `--api-key`.
 
 ## Quick Generation (mise tasks)
 
 ```bash
-mise run say "what's up party people"  # default voice (Joe Rogan)
-mise run say                          # prompts for multi-line text, Ctrl+D to finish
-VOICE="Wise_Woman" mise run say hello   # one-off voice override
-mise run voice                        # interactive voice menu
-mise run voices                       # list voices
+mise run say "the dead are dancing tonight"  # default voice (Robot_Armor, Speech 2.8 HD)
+mise run say                                 # prompts for multi-line text, Ctrl+D to finish
+VOICE="Charming_Lady" mise run say hello     # one-off voice override
+MODEL="speech-2.8-turbo" mise run say hello  # one-off model override
+mise run voice                               # search voices interactively, pick one, enter text
+mise run voices robot                        # list voices (optional search term)
+mise run models                              # list BudgetPixel models
 ```
 
-Change the default voice with `DEFAULT_VOICE` in `mise.toml`. Aliases: `mise run s`, `mise run v`.
+Change the default voice with `DEFAULT_VOICE` in `mise.toml`. Aliases: `mise run s`, `mise run v`. Files land in `output/`.
 
 ## Usage
 
 ### Interactive Mode (No Arguments)
 
-Run without arguments to use the interactive voice selection menu:
+Run without `--voice` to search the BudgetPixel catalog. Type a search term (e.g. `robot`), pick a number, then enter your text. With `--provider fal`, the original numbered menu (custom voices first, then built-in) is shown instead.
 
 ```bash
 python main.py
+python main.py --provider fal
 ```
-
-This will:
-1. Show a menu with all available voices
-2. Custom voices appear first (if configured)
-3. Built-in voices appear second
-4. Enter the number of your choice (or 'q' to quit)
-5. Then enter your text to convert to speech
 
 ### List all available voices
 
 ```bash
-python main.py --list-voices
+python main.py --list-voices                    # BudgetPixel, model from --model
+python main.py --list-voices --search armor     # filtered
+python main.py --list-models
+python main.py --provider fal --list-voices
 ```
 
 ### Generate speech with arguments
 
-When you don't specify `--output`, files are automatically named using this convention:
+When you don't specify `--output`, files are written to `output/` (or `--output-dir`) and named using this convention:
 `{voice_id}-{YYYY-MM-DD}-{text}.mp3`
 
-Example: `wise_woman-2025-10-31-hello_world.mp3` (max 100 characters)
+Example: `robot_armor-2026-10-30-hello_world.mp3` (max 100 characters)
 
 ```bash
-python main.py --voice "Wise_Woman" --text "Hello world"
+python main.py --voice "Robot_Armor" --text "Hello world, this is the robot"
+python main.py --voice "Charming_Lady" --model speech-2.8-turbo --text "Hello world"
+python main.py --provider fal --voice "Wise_Woman" --text "Hello world"
 ```
 
 ### Generate speech from stdin (multi-line text)
@@ -91,10 +103,10 @@ python main.py --voice "Deep_Voice_Man"
 python main.py --voice "Calm_Woman" --text "Welcome to our service" --output custom_name.mp3
 ```
 
-### Using API key directly
+### Using a fal.ai API key directly
 
 ```bash
-python main.py --voice "Lively_Girl" --text "Hello everyone!" --api-key "your-api-key-here"
+python main.py --provider fal --voice "Lively_Girl" --text "Hello everyone!" --api-key "your-api-key-here"
 ```
 
 ### Naming Convention
@@ -152,11 +164,16 @@ python main.py --voice "Deep_Voice_Man" --text "This is a test of the text-to-sp
 
 ## Command-line Options
 
-- `--voice`: Voice ID to use (required)
+- `--provider`: `budgetpixel` (default) or `fal`
+- `--model`: BudgetPixel model: `speech-2.8-hd` (default), `speech-2.8-turbo`, `byteplus-tts`
+- `--voice`: Voice ID (default prompt: interactive search)
 - `--text`: Text to convert to speech (optional if using stdin)
-- `--output`: Output file path (default: output.mp3)
+- `--output`: Output file path (overrides `--output-dir`)
+- `--output-dir`: Folder for auto-named files (default: `output/` in the repo)
 - `--api-key`: fal.ai API key (or use FAL_API_KEY environment variable)
-- `--list-voices`: List all available voice IDs
+- `--list-models`: List BudgetPixel models
+- `--list-voices`: List voices for the selected provider/model
+- `--search`: Filter `--list-voices` output
 - `--poll-interval`: Seconds to wait between status checks (default: 2)
 
 ## Voice Configuration File
