@@ -1,42 +1,39 @@
 #!/usr/bin/env python3
 """
-AI Voice Generator - Command-line text-to-speech tool using MiniMax Speech-02 HD API
+AI Voice Generator - Command-line text-to-speech tool (BudgetPixel Speech 2.8 HD by default, fal.ai MiniMax optionally)
 """
+
 import argparse
 import requests
 import time
 import os
 import sys
+from pathlib import Path
+
+import budgetpixel
 
 # Import voice configuration
 from voices import (
-    CUSTOM_VOICES,
-    BUILTIN_VOICES,
     ALL_VOICE_IDS,
-    VOICE_NAME_TO_ID,
     resolve_voice_id,
     list_voices,
     select_voice_interactive,
 )
 
+OUTPUT_DIR = Path(__file__).resolve().parent / "output"
 
 
 def submit_request(text, voice_id, api_key):
     """Submit a text-to-speech request and return request ID"""
     url = "https://queue.fal.run/fal-ai/minimax/speech-02-hd"
 
-    headers = {
-        "Authorization": f"Key {api_key}",
-        "Content-Type": "application/json"
-    }
+    headers = {"Authorization": f"Key {api_key}", "Content-Type": "application/json"}
 
     payload = {
         "text": text,
-        "voice_setting": {
-            "voice_id": voice_id
-        },
+        "voice_setting": {"voice_id": voice_id},
         "output_format": "url",  # Get URL instead of hex
-        "enable_safety_checker": False
+        "enable_safety_checker": False,
     }
 
     print(f"\n📤 Submitting request...")
@@ -62,9 +59,7 @@ def submit_request(text, voice_id, api_key):
 
 def check_status(status_url, api_key):
     """Check the status of the request"""
-    headers = {
-        "Authorization": f"Key {api_key}"
-    }
+    headers = {"Authorization": f"Key {api_key}"}
 
     response = requests.get(status_url, headers=headers)
 
@@ -110,9 +105,7 @@ def poll_until_complete(request_id, status_url, api_key, poll_interval=2):
 
 def get_result(response_url, api_key):
     """Get the final result of the request"""
-    headers = {
-        "Authorization": f"Key {api_key}"
-    }
+    headers = {"Authorization": f"Key {api_key}"}
 
     print(f"📥 Retrieving result from response URL...")
     print(f"   URL: {response_url}")
@@ -154,7 +147,9 @@ def generate_filename(voice_id, display_name, text, default_output="output.mp3")
     # Use display name for custom voices, voice_id for built-in voices
     if display_name != voice_id:
         # This is a custom voice - use the display name (sanitized)
-        voice_identifier = "".join(c if c.isalnum() else "_" for c in display_name.lower())
+        voice_identifier = "".join(
+            c if c.isalnum() else "_" for c in display_name.lower()
+        )
     else:
         # This is a built-in voice - use the voice ID (sanitized)
         voice_identifier = "".join(c if c.isalnum() else "_" for c in voice_id.lower())
@@ -165,6 +160,7 @@ def generate_filename(voice_id, display_name, text, default_output="output.mp3")
 
     # Replace multiple spaces/underscores with single underscore
     import re
+
     safe_text = re.sub(r"[_\s]+", "_", safe_text)
 
     # Remove leading/trailing underscores
@@ -187,7 +183,9 @@ def generate_filename(voice_id, display_name, text, default_output="output.mp3")
         # Voice identifier is too long, truncate it
         max_voice_len = 100 - date_part - extension_part - separators - 1
         voice_identifier = voice_identifier[:max_voice_len]
-        available_for_text = 100 - date_part - extension_part - separators - len(voice_identifier)
+        available_for_text = (
+            100 - date_part - extension_part - separators - len(voice_identifier)
+        )
 
     # Truncate text if needed
     if len(safe_text) > available_for_text:
@@ -212,7 +210,10 @@ def download_audio(audio_url, output_path):
         sys.exit(1)
 
     # Create directory if it doesn't exist
-    os.makedirs(os.path.dirname(output_path) if os.path.dirname(output_path) else ".", exist_ok=True)
+    os.makedirs(
+        os.path.dirname(output_path) if os.path.dirname(output_path) else ".",
+        exist_ok=True,
+    )
 
     with open(output_path, "wb") as f:
         f.write(response.content)
@@ -223,89 +224,153 @@ def download_audio(audio_url, output_path):
     print(f"   Size: {file_size / 1024:.1f} KB\n")
 
 
+def run_fal(text, voice_id, api_key, poll_interval):
+    """Run a fal.ai MiniMax generation and return the audio URL."""
+    request_id, status_url = submit_request(text, voice_id, api_key)
+    status_data = poll_until_complete(request_id, status_url, api_key, poll_interval)
+
+    response_url = status_data.get("response_url")
+    if not response_url:
+        print("❌ Error: No response_url in status data")
+        sys.exit(1)
+
+    audio_url = get_result(response_url, api_key).get("audio", {}).get("url")
+    if not audio_url:
+        print("❌ Error: No audio URL in response")
+        sys.exit(1)
+    return audio_url
+
+
 def main():
     parser = argparse.ArgumentParser(
-        description="AI Voice Generator - Convert text to speech using MiniMax Speech-02 HD",
+        description="AI Voice Generator - Convert text to speech (BudgetPixel by default, or fal.ai)",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
+        epilog=f"""
 Examples:
-  %(prog)s --voice "Wise_Woman" --text "Hello world"
-  %(prog)s --list-voices
-  %(prog)s --voice "Deep_Voice_Man" --text "This is a test" --output test.mp3
+  %(prog)s --voice Robot_Armor --text "The dead are dancing tonight"
+  %(prog)s --list-models
+  %(prog)s --list-voices --search robot
+  %(prog)s --model speech-2.8-turbo --voice Robot_Armor --text "Faster render"
+  %(prog)s --provider fal --voice "Joe Rogan" --text "Hello world"
+
+Files are saved to {OUTPUT_DIR} unless --output or --output-dir is given.
 
 Environment Variables:
-  FAL_API_KEY    Your fal.ai API key (required if not using --api-key)
-"""
+  BUDGETPIXEL_SESSION  budgetpixel.com session cookie (provider budgetpixel)
+  FAL_API_KEY          fal.ai API key (provider fal)
+""",
+    )
+
+    parser.add_argument(
+        "--provider",
+        choices=["budgetpixel", "fal"],
+        default="budgetpixel",
+        help="TTS provider (default: budgetpixel)",
+    )
+
+    parser.add_argument(
+        "--model",
+        choices=list(budgetpixel.TTS_MODELS),
+        default=budgetpixel.DEFAULT_MODEL,
+        help=f"BudgetPixel model (default: {budgetpixel.DEFAULT_MODEL})",
     )
 
     parser.add_argument(
         "--voice",
         type=str,
-        help="Voice ID to use (see --list-voices for all options)"
+        help="Voice ID to use (see --list-voices; omit for the interactive picker)",
     )
 
-    parser.add_argument(
-        "--text",
-        type=str,
-        help="Text to convert to speech"
-    )
+    parser.add_argument("--text", type=str, help="Text to convert to speech")
 
     parser.add_argument(
         "--output",
         type=str,
-        default="output.mp3",
-        help="Output file path (default: output.mp3)"
+        help="Exact output file path (default: auto-named file in --output-dir)",
+    )
+
+    parser.add_argument(
+        "--output-dir",
+        type=Path,
+        default=OUTPUT_DIR,
+        help=f"Folder for auto-named files (default: {OUTPUT_DIR})",
     )
 
     parser.add_argument(
         "--api-key",
         type=str,
-        help="fal.ai API key (or set FAL_API_KEY environment variable)"
+        help="fal.ai API key (or set FAL_API_KEY environment variable)",
+    )
+
+    parser.add_argument(
+        "--list-models",
+        action="store_true",
+        help="List BudgetPixel TTS models and exit",
     )
 
     parser.add_argument(
         "--list-voices",
         action="store_true",
-        help="List all available voice IDs and exit"
+        help="List voices for the selected provider/model and exit",
+    )
+
+    parser.add_argument(
+        "--search",
+        type=str,
+        help="Filter --list-voices by name, ID, language or category",
     )
 
     parser.add_argument(
         "--poll-interval",
         type=int,
         default=2,
-        help="Seconds to wait between status checks (default: 2)"
+        help="Seconds to wait between status checks (default: 2)",
     )
 
     args = parser.parse_args()
+    use_bp = args.provider == "budgetpixel"
 
-    # List voices and exit
-    if args.list_voices:
-        list_voices()
+    if args.list_models:
+        budgetpixel.list_models()
         return
 
-    # Get API key from args or environment
-    api_key = args.api_key or os.environ.get("FAL_API_KEY")
+    if args.list_voices:
+        if use_bp:
+            budgetpixel.list_voices(
+                budgetpixel.get_access_token(), args.model, args.search
+            )
+        else:
+            list_voices()
+        return
 
-    if not api_key:
-        print("❌ Error: API key required")
-        print("   Either use --api-key flag or set FAL_API_KEY environment variable")
-        sys.exit(1)
+    api_key = None
+    if not use_bp:
+        api_key = args.api_key or os.environ.get("FAL_API_KEY")
+        if not api_key:
+            print("❌ Error: API key required")
+            print(
+                "   Either use --api-key flag or set FAL_API_KEY environment variable"
+            )
+            sys.exit(1)
 
-    # Get voice - show interactive menu if not provided
-    if args.voice is None:
-        args.voice = select_voice_interactive()
-
-    # Resolve voice input to actual voice ID
-    voice_id, display_name = resolve_voice_id(args.voice)
-
-    # Check if it's a valid voice
-    if voice_id not in ALL_VOICE_IDS:
-        print(f"⚠️  Warning: '{args.voice}' is not in the known voice list.")
-        print("   It may still work if it's a valid voice ID.")
-        print("   Use --list-voices to see all known options.\n")
+    if use_bp:
+        if args.voice is None:
+            args.voice = budgetpixel.select_voice_interactive(
+                budgetpixel.get_access_token(), args.model
+            )
+        voice_id = display_name = args.voice
+        print(
+            f"✅ Using voice: {voice_id} ({budgetpixel.TTS_MODELS[args.model]['name']})\n"
+        )
     else:
-        # Show which voice we're using
-        if display_name != voice_id:
+        if args.voice is None:
+            args.voice = select_voice_interactive()
+        voice_id, display_name = resolve_voice_id(args.voice)
+        if voice_id not in ALL_VOICE_IDS:
+            print(f"⚠️  Warning: '{args.voice}' is not in the known voice list.")
+            print("   It may still work if it's a valid voice ID.")
+            print("   Use --list-voices to see all known options.\n")
+        elif display_name != voice_id:
             print(f"✅ Using voice: {display_name} (ID: {voice_id})\n")
         else:
             print(f"✅ Using voice: {voice_id}\n")
@@ -333,33 +398,17 @@ Environment Variables:
         sys.exit(1)
 
     try:
-        # Generate filename if not provided
-        output_file = args.output
-        if output_file == "output.mp3":
-            # User didn't specify custom output, use naming convention
-            output_file = generate_filename(voice_id, display_name, text)
-            print(f"📝 Using auto-generated filename: {output_file}\n")
+        output_file = args.output or str(
+            args.output_dir / generate_filename(voice_id, display_name, text)
+        )
+        print(f"📝 Output file: {output_file}\n")
 
-        # Submit request
-        request_id, status_url = submit_request(text, voice_id, api_key)
-
-        # Poll until complete
-        status_data = poll_until_complete(request_id, status_url, api_key, args.poll_interval)
-
-        # Get the response_url from the final status
-        response_url = status_data.get("response_url")
-        if not response_url:
-            print("❌ Error: No response_url in status data")
-            sys.exit(1)
-
-        # Get result
-        result = get_result(response_url, api_key)
-
-        # Download audio
-        audio_url = result.get("audio", {}).get("url")
-        if not audio_url:
-            print("❌ Error: No audio URL in response")
-            sys.exit(1)
+        if use_bp:
+            audio_url = budgetpixel.generate(
+                text, voice_id, args.model, args.poll_interval
+            )
+        else:
+            audio_url = run_fal(text, voice_id, api_key, args.poll_interval)
 
         download_audio(audio_url, output_file)
 

@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- BudgetPixel TTS provider (`budgetpixel.py`), now the default: MiniMax Speech 2.8 HD/Turbo and BytePlus TTS, authenticated with a `BUDGETPIXEL_SESSION` web-session cookie (#1)
+- `--provider`, `--model`, `--list-models`, `--search`, `--output-dir` options; interactive voice search for BudgetPixel
+- `mise run models`; `mise run voices <term>` search
+
+### Changed
+- Default voice is `Robot_Armor`
+- Auto-named files are saved to `output/` (git-ignored) instead of the working directory
+
 ## [2.0.0] - 2025-11-06
 
 ### 🎨 Added
