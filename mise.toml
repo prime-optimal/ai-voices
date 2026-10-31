@@ -1,0 +1,27 @@
+[env]
+# Default voice for `mise run say`. Override per-call: VOICE="Wise_Woman" mise run say ...
+DEFAULT_VOICE = "Joe Rogan"
+
+# All tasks pull FAL_API_KEY from fnox (fnox.toml) at run time.
+
+[tasks.say]
+description = "Generate speech with the default voice (Joe Rogan). No text → prompts for multi-line input"
+alias = "s"
+usage = 'arg "[text]" help="Text to speak (quotes optional)" var=#true'
+run = '''
+if [ -n "${usage_text:-}" ]; then
+  eval "set -- $usage_text"  # usage_text is shell-quoted words; unquote and rejoin
+  fnox exec -- uv run main.py --voice "${VOICE:-$DEFAULT_VOICE}" --text "$*"
+else
+  fnox exec -- uv run main.py --voice "${VOICE:-$DEFAULT_VOICE}"
+fi
+'''
+
+[tasks.voice]
+description = "Pick a voice from the interactive menu, then enter text"
+alias = "v"
+run = "fnox exec -- uv run main.py"
+
+[tasks.voices]
+description = "List all available voices"
+run = "uv run main.py --list-voices"

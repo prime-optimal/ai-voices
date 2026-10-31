@@ -52,7 +52,7 @@ python main.py --voice "Lively_Girl" --text "Hello!" --api-key "your-key-here"
 ### Environment Setup
 ```bash
 # Set API key as environment variable
-export FAL_KEY="your-api-key-here"
+export FAL_API_KEY="your-api-key-here"
 ```
 
 ## Available Voices
@@ -143,14 +143,14 @@ Examples:
 ### Input Validation
 - Text length: Maximum 5000 characters
 - Minimum 1 non-whitespace character required
-- API key required (via --api-key flag or FAL_KEY environment variable)
+- API key required (via --api-key flag or FAL_API_KEY environment variable)
 - Voice ID validated against known list (warning shown if not found but still works)
 
 ### Configuration Options
 - `--voice` - Voice ID (required)
 - `--text` - Text to convert (optional if using stdin)
 - `--output` - Output file path (default: auto-generated filename)
-- `--api-key` - fal.ai API key (or use FAL_KEY environment variable)
+- `--api-key` - fal.ai API key (or use FAL_API_KEY environment variable)
 - `--poll-interval` - Seconds between status checks (default: 2)
 
 ## Working with the Codebase

@@ -194,11 +194,11 @@ class TextualTTSApp(App):
             )
             return
 
-        api_key = os.environ.get("FAL_KEY")
+        api_key = os.environ.get("FAL_API_KEY")
         if not api_key:
             self.query_one("#output-display", Static).update(
-                "❌ Please set FAL_KEY environment variable\n\n"
-                "export FAL_KEY='your-api-key-here'"
+                "❌ Please set FAL_API_KEY environment variable\n\n"
+                "export FAL_API_KEY='your-api-key-here'"
             )
             return
 
@@ -212,7 +212,7 @@ class TextualTTSApp(App):
                 [sys.executable, "main.py", "--voice", self.selected_voice, "--text", self.text_content],
                 capture_output=True,
                 text=True,
-                env={**os.environ, "FAL_KEY": api_key},
+                env={**os.environ, "FAL_API_KEY": api_key},
             )
 
             if result.returncode == 0:

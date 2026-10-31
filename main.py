@@ -35,7 +35,8 @@ def submit_request(text, voice_id, api_key):
         "voice_setting": {
             "voice_id": voice_id
         },
-        "output_format": "url"  # Get URL instead of hex
+        "output_format": "url",  # Get URL instead of hex
+        "enable_safety_checker": False
     }
 
     print(f"\n📤 Submitting request...")
@@ -233,7 +234,7 @@ Examples:
   %(prog)s --voice "Deep_Voice_Man" --text "This is a test" --output test.mp3
 
 Environment Variables:
-  FAL_KEY    Your fal.ai API key (required if not using --api-key)
+  FAL_API_KEY    Your fal.ai API key (required if not using --api-key)
 """
     )
 
@@ -259,7 +260,7 @@ Environment Variables:
     parser.add_argument(
         "--api-key",
         type=str,
-        help="fal.ai API key (or set FAL_KEY environment variable)"
+        help="fal.ai API key (or set FAL_API_KEY environment variable)"
     )
 
     parser.add_argument(
@@ -283,11 +284,11 @@ Environment Variables:
         return
 
     # Get API key from args or environment
-    api_key = args.api_key or os.environ.get("FAL_KEY")
+    api_key = args.api_key or os.environ.get("FAL_API_KEY")
 
     if not api_key:
         print("❌ Error: API key required")
-        print("   Either use --api-key flag or set FAL_KEY environment variable")
+        print("   Either use --api-key flag or set FAL_API_KEY environment variable")
         sys.exit(1)
 
     # Get voice - show interactive menu if not provided

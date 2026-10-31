@@ -30,13 +30,19 @@ pip install requests>=2.31.0
 
 You'll need a fal.ai API key. You can get one at [fal.ai](https://fal.ai).
 
-Set the API key as an environment variable:
+The key is stored encrypted in `fnox.toml` as `FAL_API_KEY`; the mise tasks below inject it automatically via `fnox exec`. To run `main.py` directly, use `fnox exec -- uv run main.py ...`, export `FAL_API_KEY`, or pass `--api-key`.
+
+## Quick Generation (mise tasks)
 
 ```bash
-export FAL_KEY="your-api-key-here"
+mise run say "what's up party people"  # default voice (Joe Rogan)
+mise run say                          # prompts for multi-line text, Ctrl+D to finish
+VOICE="Wise_Woman" mise run say hello   # one-off voice override
+mise run voice                        # interactive voice menu
+mise run voices                       # list voices
 ```
 
-Or pass it directly with the `--api-key` flag when running the script.
+Change the default voice with `DEFAULT_VOICE` in `mise.toml`. Aliases: `mise run s`, `mise run v`.
 
 ## Usage
 
@@ -149,7 +155,7 @@ python main.py --voice "Deep_Voice_Man" --text "This is a test of the text-to-sp
 - `--voice`: Voice ID to use (required)
 - `--text`: Text to convert to speech (optional if using stdin)
 - `--output`: Output file path (default: output.mp3)
-- `--api-key`: fal.ai API key (or use FAL_KEY environment variable)
+- `--api-key`: fal.ai API key (or use FAL_API_KEY environment variable)
 - `--list-voices`: List all available voice IDs
 - `--poll-interval`: Seconds to wait between status checks (default: 2)
 
@@ -250,7 +256,7 @@ Both will be validated against the known voice list. Use `--list-voices` to see 
 ## Troubleshooting
 
 **Error: API key required**
-- Set the FAL_KEY environment variable or use the `--api-key` flag
+- Set the FAL_API_KEY environment variable or use the `--api-key` flag
 
 **Error: Text too long**
 - Maximum text length is 5000 characters

@@ -41,10 +41,10 @@ def show_welcome():
 
 def get_api_key():
     """Get and validate API key"""
-    api_key = os.environ.get("FAL_KEY")
+    api_key = os.environ.get("FAL_API_KEY")
 
     if not api_key:
-        console.print("[yellow]⚠️  FAL_KEY environment variable not set[/]")
+        console.print("[yellow]⚠️  FAL_API_KEY environment variable not set[/]")
         api_key = Prompt.ask("Enter your fal.ai API key", password=True)
 
         if not api_key:
@@ -205,7 +205,7 @@ def main():
             [sys.executable, "main.py", "--voice", voice_id, "--text", text],
             capture_output=True,
             text=True,
-            env={**os.environ, "FAL_KEY": api_key},
+            env={**os.environ, "FAL_API_KEY": api_key},
         )
 
         # Display the result
