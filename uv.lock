@@ -3,13 +3,13 @@ revision = 3
 requires-python = ">=3.14"
 
 [options]
-exclude-newer = "2026-04-11T06:05:03.03821Z"
+exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for backwards compatibility when using relative exclude-newer values.
 exclude-newer-span = "P7D"
 
 [[package]]
 name = "ai-voices"
-version = "0.1.0"
-source = { virtual = "." }
+version = "2.0.0"
+source = { editable = "." }
 dependencies = [
     { name = "fal-client" },
     { name = "prompt-toolkit" },

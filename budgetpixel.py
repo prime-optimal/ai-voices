@@ -45,7 +45,7 @@ def get_access_token(session=None):
     if not session:
         _fail(
             "BUDGETPIXEL_SESSION is not set",
-            f"Copy the '{SESSION_COOKIE}' cookie from a logged-in budgetpixel.com tab (see README).",
+            f"Copy the '{SESSION_COOKIE}' cookie from a logged-in budgetpixel.com tab, then run `mise run login` in the ai-voices repo (see README).",
         )
 
     cookie = session if "=" in session else f"{SESSION_COOKIE}={session}"
@@ -62,7 +62,7 @@ def get_access_token(session=None):
     if not token:
         _fail(
             "BudgetPixel session is invalid or expired",
-            "Log in to budgetpixel.com again and refresh BUDGETPIXEL_SESSION.",
+            "Log in to budgetpixel.com again, copy a fresh cookie, and run `mise run login`.",
         )
     return token
 

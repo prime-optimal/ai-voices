@@ -1,7 +1,7 @@
 [project]
 name = "ai-voices"
-version = "0.1.0"
-description = "Add your description here"
+version = "2.0.0"
+description = "Command-line text-to-speech generator (BudgetPixel and fal.ai MiniMax voices)"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
@@ -11,3 +11,21 @@ dependencies = [
     "rich>=14.2.0",
     "textual>=6.5.0",
 ]
+
+[project.scripts]
+voice = "main:main"
+
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+py-modules = ["main", "budgetpixel", "voices"]
+
+[tool.commitizen]
+name = "cz_conventional_commits"
+version_provider = "pep621"
+tag_format = "v$version"
+update_changelog_on_bump = true
+changelog_incremental = true
+major_version_zero = false

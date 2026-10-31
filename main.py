@@ -4,6 +4,8 @@ AI Voice Generator - Command-line text-to-speech tool (BudgetPixel Speech 2.8 HD
 """
 
 import argparse
+import shutil
+import subprocess
 import requests
 import time
 import os
@@ -20,7 +22,25 @@ from voices import (
     select_voice_interactive,
 )
 
-OUTPUT_DIR = Path(__file__).resolve().parent / "output"
+APP_DIR = Path(__file__).resolve().parent
+OUTPUT_DIR = APP_DIR / "output"
+FNOX_CONFIG = APP_DIR / "fnox.toml"
+
+
+def load_secret(name):
+    """Return env var `name`, falling back to the repo's fnox.toml via `fnox get`."""
+    value = os.environ.get(name)
+    if value or not shutil.which("fnox") or not FNOX_CONFIG.exists():
+        return value
+    result = subprocess.run(
+        ["fnox", "get", name, "-c", str(FNOX_CONFIG)],
+        capture_output=True,
+        text=True,
+    )
+    value = result.stdout.strip() if result.returncode == 0 else ""
+    if value:
+        os.environ[name] = value
+    return value or None
 
 
 def submit_request(text, voice_id, api_key):
@@ -247,17 +267,20 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog=f"""
 Examples:
-  %(prog)s --voice Robot_Armor --text "The dead are dancing tonight"
+  %(prog)s The dead are dancing tonight      (default voice, text as plain words)
+  %(prog)s --pick                            (search voices interactively)
   %(prog)s --list-models
   %(prog)s --list-voices --search robot
-  %(prog)s --model speech-2.8-turbo --voice Robot_Armor --text "Faster render"
-  %(prog)s --provider fal --voice "Joe Rogan" --text "Hello world"
+  %(prog)s --model speech-2.8-turbo --voice Robot_Armor "Faster render"
+  %(prog)s --provider fal --voice "Joe Rogan" "Hello world"
 
 Files are saved to {OUTPUT_DIR} unless --output or --output-dir is given.
+No text → prompts for multi-line input (Ctrl+D to finish).
 
-Environment Variables:
+Environment Variables (fall back to {FNOX_CONFIG} via fnox):
   BUDGETPIXEL_SESSION  budgetpixel.com session cookie (provider budgetpixel)
   FAL_API_KEY          fal.ai API key (provider fal)
+  VOICE                Voice used when --voice is omitted (default: {budgetpixel.DEFAULT_VOICE})
 """,
     )
 
@@ -278,8 +301,17 @@ Environment Variables:
     parser.add_argument(
         "--voice",
         type=str,
-        help="Voice ID to use (see --list-voices; omit for the interactive picker)",
+        help="Voice ID (default: $VOICE or $DEFAULT_VOICE or "
+        f"{budgetpixel.DEFAULT_VOICE}; see --list-voices)",
     )
+
+    parser.add_argument(
+        "--pick",
+        action="store_true",
+        help="Choose the voice from the interactive picker",
+    )
+
+    parser.add_argument("words", nargs="*", help="Text to speak (quotes optional)")
 
     parser.add_argument("--text", type=str, help="Text to convert to speech")
 
@@ -336,6 +368,7 @@ Environment Variables:
 
     if args.list_voices:
         if use_bp:
+            load_secret("BUDGETPIXEL_SESSION")
             budgetpixel.list_voices(
                 budgetpixel.get_access_token(), args.model, args.search
             )
@@ -343,15 +376,25 @@ Environment Variables:
             list_voices()
         return
 
+    if use_bp:
+        load_secret("BUDGETPIXEL_SESSION")
+
     api_key = None
     if not use_bp:
-        api_key = args.api_key or os.environ.get("FAL_API_KEY")
+        api_key = args.api_key or load_secret("FAL_API_KEY")
         if not api_key:
             print("❌ Error: API key required")
             print(
                 "   Either use --api-key flag or set FAL_API_KEY environment variable"
             )
             sys.exit(1)
+
+    if args.voice is None and not args.pick:
+        args.voice = (
+            os.environ.get("VOICE")
+            or os.environ.get("DEFAULT_VOICE")
+            or budgetpixel.DEFAULT_VOICE
+        )
 
     if use_bp:
         if args.voice is None:
@@ -376,7 +419,7 @@ Environment Variables:
             print(f"✅ Using voice: {voice_id}\n")
 
     # Get text from user if not provided
-    text = args.text
+    text = args.text or " ".join(args.words)
     if not text:
         print("\nEnter the text to convert to speech:")
         print("(Press Ctrl+D/Ctrl+Z on a new line when finished)")

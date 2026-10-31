@@ -1,37 +1,37 @@
 [env]
-# Default voice for `mise run say`. Override per-call: VOICE="Charming_Lady" mise run say ...
+# Default voice for `mise run say` / `voice`. Override per-call: VOICE="Charming_Lady" mise run say ...
 # Override the model with MODEL="speech-2.8-turbo"; switch back to fal with PROVIDER=fal.
 DEFAULT_VOICE = "Robot_Armor"
 
-# All tasks pull BUDGETPIXEL_SESSION / FAL_API_KEY from fnox (fnox.toml) at run time.
+# main.py loads BUDGETPIXEL_SESSION / FAL_API_KEY from fnox.toml itself (via `fnox get`).
 
 [tasks.say]
 description = "Generate speech with the default voice (Robot_Armor on BudgetPixel Speech 2.8 HD). No text → prompts for multi-line input"
 alias = "s"
 usage = 'arg "[text]" help="Text to speak (quotes optional)" var=#true'
 run = '''
-set -- --provider "${PROVIDER:-budgetpixel}" --model "${MODEL:-speech-2.8-hd}" --voice "${VOICE:-$DEFAULT_VOICE}"
-if [ -n "${usage_text:-}" ]; then
-  args="$*"
-  eval "set -- $usage_text"  # usage_text is shell-quoted words; unquote and rejoin
-  text="$*"
-  eval "set -- $args"
-  fnox exec -- uv run main.py "$@" --text "$text"
-else
-  fnox exec -- uv run main.py "$@"
-fi
+eval "set -- ${usage_text:-}"  # usage_text is shell-quoted words; unquote
+uv run main.py --provider "${PROVIDER:-budgetpixel}" --model "${MODEL:-speech-2.8-hd}" -- "$@"
 '''
 
 [tasks.voice]
 description = "Search BudgetPixel voices interactively, pick one, then enter text"
 alias = "v"
-run = 'fnox exec -- uv run main.py --model "${MODEL:-speech-2.8-hd}"'
+run = 'uv run main.py --pick --model "${MODEL:-speech-2.8-hd}"'
 
 [tasks.voices]
 description = "List BudgetPixel voices (optional search term, e.g. `mise run voices robot`)"
 usage = 'arg "[query]" help="Filter by name, ID, language or category"'
-run = 'fnox exec -- uv run main.py --model "${MODEL:-speech-2.8-hd}" --list-voices ${usage_query:+--search "$usage_query"}'
+run = 'uv run main.py --model "${MODEL:-speech-2.8-hd}" --list-voices ${usage_query:+--search "$usage_query"}'
 
 [tasks.models]
 description = "List BudgetPixel TTS models"
 run = "uv run main.py --list-models"
+
+[tasks.login]
+description = "Store a fresh budgetpixel.com session cookie in fnox (paste __Secure-next-auth.session-token)"
+run = "fnox set BUDGETPIXEL_SESSION --provider age"
+
+[tasks.install]
+description = "Install the `voice` command into ~/.local/bin (editable: code changes apply immediately)"
+run = "uv tool install --editable --force ."
