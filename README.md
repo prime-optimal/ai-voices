@@ -12,18 +12,12 @@ A command-line tool for generating speech from text with MiniMax Speech 2.8 (and
 
 ## Installation
 
-1. Clone or download this repository
-2. Install dependencies using uv:
-
 ```bash
-uv sync
+uv sync            # dependencies for running from the repo
+mise run install   # installs the `voice` command into ~/.local/bin
 ```
 
-Or using pip:
-
-```bash
-pip install requests>=2.31.0
-```
+`mise run install` runs `uv tool install --editable --force .`. Because the install is editable, `voice` works from any directory and still uses this repo's `fnox.toml` and `output/` folder; code changes apply without reinstalling. (`say` is not used as the name because macOS ships `/usr/bin/say`.)
 
 ## Setup
 
@@ -32,40 +26,56 @@ pip install requests>=2.31.0
 BudgetPixel's public API key (`bpx_…`) does not expose the speech models. Only the web app does, so the CLI authenticates with your web session:
 
 1. Log in to [budgetpixel.com](https://budgetpixel.com) in your browser.
-2. Open DevTools → Application → Cookies → `https://budgetpixel.com` and copy the value of `__Secure-next-auth.session-token`.
-3. Store it encrypted: `fnox set BUDGETPIXEL_SESSION --provider age` (paste the value).
+2. Open DevTools (⌥⌘I) → **Application** tab (Safari: **Storage**) → **Cookies** → `https://budgetpixel.com`, select `__Secure-next-auth.session-token`, and copy its **Value**.
+3. Run `mise run login` (same as `fnox set BUDGETPIXEL_SESSION --provider age`) and paste it. It is stored age-encrypted in `fnox.toml`.
 
-The mise tasks inject it via `fnox exec`. To call `main.py` directly, run `fnox exec -- uv run main.py ...` or export `BUDGETPIXEL_SESSION`. When the cookie expires, the CLI reports `session is invalid or expired`. Repeat steps 1–3 to refresh it.
+When the cookie expires, the CLI reports `session is invalid or expired`; repeat steps 1–3.
 
 BudgetPixel requires 10–5000 characters of text.
 
 ### fal.ai
 
-`--provider fal` needs a fal.ai API key ([fal.ai](https://fal.ai)). It is stored in `fnox.toml` as `FAL_API_KEY`. Use `fnox exec`, export `FAL_API_KEY`, or pass `--api-key`.
+`--provider fal` needs a fal.ai API key ([fal.ai](https://fal.ai)), stored age-encrypted in `fnox.toml` as `FAL_API_KEY`.
 
-## Quick Generation (mise tasks)
+### How secrets are loaded
+
+`main.py` (and so `voice` and every mise task) reads `BUDGETPIXEL_SESSION` / `FAL_API_KEY` from the environment first, then falls back to `fnox get <KEY> -c <repo>/fnox.toml`. No `fnox exec` wrapper needed. `--api-key` still overrides the fal key.
+
+## Quick Generation
 
 ```bash
-mise run say "the dead are dancing tonight"  # default voice (Robot_Armor, Speech 2.8 HD)
-mise run say                                 # prompts for multi-line text, Ctrl+D to finish
-VOICE="Charming_Lady" mise run say hello     # one-off voice override
-MODEL="speech-2.8-turbo" mise run say hello  # one-off model override
-mise run voice                               # search voices interactively, pick one, enter text
-mise run voices robot                        # list voices (optional search term)
-mise run models                              # list BudgetPixel models
+voice the dead are dancing tonight          # default voice (Robot_Armor, Speech 2.8 HD); quotes optional
+voice                                       # prompts for multi-line text, Ctrl+D to finish
+voice --pick                                # search voices interactively, pick one, enter text
+VOICE=Charming_Lady voice hello there       # one-off voice override
+voice --provider fal --voice "Joe Rogan" "what's up party people"
 ```
 
-Change the default voice with `DEFAULT_VOICE` in `mise.toml`. Aliases: `mise run s`, `mise run v`. Files land in `output/`.
+Text with apostrophes needs quotes (or `\'`), since the shell reads it first.
+
+The same from inside the repo via mise:
+
+```bash
+mise run say "the dead are dancing tonight"  # default voice
+VOICE="Charming_Lady" mise run say hello     # one-off voice override
+MODEL="speech-2.8-turbo" mise run say hello  # one-off model override
+mise run voice                               # interactive voice picker
+mise run voices robot                        # list voices (optional search term)
+mise run models                              # list BudgetPixel models
+mise run login                               # store/refresh the BudgetPixel cookie
+```
+
+The default voice is `$VOICE`, then `$DEFAULT_VOICE` (set to `Robot_Armor` in `mise.toml` for mise tasks), then `Robot_Armor`. Aliases: `mise run s`, `mise run v`. Files land in `output/`.
 
 ## Usage
 
-### Interactive Mode (No Arguments)
+### Interactive Mode
 
-Run without `--voice` to search the BudgetPixel catalog. Type a search term (e.g. `robot`), pick a number, then enter your text. With `--provider fal`, the original numbered menu (custom voices first, then built-in) is shown instead.
+Use `--pick` to search the BudgetPixel catalog. Type a search term (e.g. `robot`), pick a number, then enter your text. With `--provider fal`, the original numbered menu (custom voices first, then built-in) is shown instead.
 
 ```bash
-python main.py
-python main.py --provider fal
+python main.py --pick
+python main.py --pick --provider fal
 ```
 
 ### List all available voices
@@ -166,8 +176,9 @@ python main.py --voice "Deep_Voice_Man" --text "This is a test of the text-to-sp
 
 - `--provider`: `budgetpixel` (default) or `fal`
 - `--model`: BudgetPixel model: `speech-2.8-hd` (default), `speech-2.8-turbo`, `byteplus-tts`
-- `--voice`: Voice ID (default prompt: interactive search)
-- `--text`: Text to convert to speech (optional if using stdin)
+- `--voice`: Voice ID (default: `$VOICE`, `$DEFAULT_VOICE`, then `Robot_Armor`)
+- `--pick`: Choose the voice from the interactive picker
+- `words…` / `--text`: Text to convert (plain trailing words, quotes optional; omitted → stdin prompt)
 - `--output`: Output file path (overrides `--output-dir`)
 - `--output-dir`: Folder for auto-named files (default: `output/` in the repo)
 - `--api-key`: fal.ai API key (or use FAL_API_KEY environment variable)

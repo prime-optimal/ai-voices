@@ -12,50 +12,26 @@ BudgetPixel's `bpx_` developer API has no speech models. `budgetpixel.py` theref
 
 ### Installation
 ```bash
-# Using uv (recommended)
-uv sync
-
-# Using pip
-pip install requests>=2.31.0
+uv sync            # dependencies
+mise run install   # `uv tool install --editable --force .` → `voice` on PATH (~/.local/bin)
 ```
+`voice` is the `[project.scripts]` entry point (`main:main`). The editable install keeps `APP_DIR` = this repo, so `fnox.toml` and `output/` resolve here from any cwd. `say` is not used because macOS ships `/usr/bin/say`.
 
 ### Running the Application
-
-#### Interactive Mode (Recommended)
 ```bash
-# Run without arguments for interactive voice selection menu
-python main.py
-```
-This will show an interactive menu where you can:
-- Select voices by number
-- Custom voices appear first
-- Built-in voices appear second
-- Enter 'q' to quit at any time
-
-#### Command-Line Mode
-```bash
-# List all available voices
-python main.py --list-voices
-
-# Generate speech with auto-generated filename
-python main.py --voice "Wise_Woman" --text "Hello world"
-
-# Generate speech from stdin (multi-line support)
-python main.py --voice "Deep_Voice_Man"
-# Type text, then press Ctrl+D when finished
-
-# Custom output file
-python main.py --voice "Calm_Woman" --text "Welcome" --output custom.mp3
-
-# Using API key directly
-python main.py --voice "Lively_Girl" --text "Hello!" --api-key "your-key-here"
+voice the dead are dancing tonight     # default voice, words joined as text
+voice                                  # stdin prompt, Ctrl+D to finish
+voice --pick                           # interactive voice picker
+voice --list-voices --search robot
+voice --provider fal --voice "Joe Rogan" "Hello world"
+mise run say|voice|voices|models|login|install   # same, from the repo
 ```
 
-### Environment Setup
-```bash
-# Set API key as environment variable
-export FAL_API_KEY="your-api-key-here"
-```
+### Secrets
+`load_secret()` in main.py: env var first, else `fnox get <KEY> -c <repo>/fnox.toml`. Keys: `BUDGETPIXEL_SESSION` (cookie, `mise run login` to refresh) and `FAL_API_KEY`, both age-encrypted in `fnox.toml`. No `fnox exec` wrapper needed.
+
+### Releases / Changelog
+Commitizen (`[tool.commitizen]` in pyproject.toml). Use Conventional Commits (`feat:`, `fix:`, `docs:`…); release with `uvx --from commitizen cz bump`, which updates the version, prepends to `CHANGELOG.md`, and tags `vX.Y.Z`. Push with `git push --follow-tags`.
 
 ## Available Voices
 
@@ -146,14 +122,15 @@ Examples:
 ### Input Validation
 - Text length: Maximum 5000 characters
 - Minimum 1 non-whitespace character required
-- API key required (via --api-key flag or FAL_API_KEY environment variable)
+- fal API key required (via --api-key flag, FAL_API_KEY env var, or fnox.toml)
 - Voice ID validated against known list (warning shown if not found but still works)
 
 ### Configuration Options
 - `--provider` - `budgetpixel` (default) or `fal`
 - `--model` - BudgetPixel model (`speech-2.8-hd` default, `speech-2.8-turbo`, `byteplus-tts`)
-- `--voice` - Voice ID (omitted → interactive search)
-- `--text` - Text to convert (optional if using stdin)
+- `--voice` - Voice ID (default: `$VOICE`, `$DEFAULT_VOICE`, then `Robot_Armor`)
+- `--pick` - Interactive voice picker
+- `words…` / `--text` - Text to convert (omitted → stdin prompt)
 - `--output` - Output file path (default: auto-generated filename in `--output-dir`)
 - `--output-dir` - Folder for auto-named files (default: `<repo>/output`)
 - `--list-models`, `--list-voices`, `--search` - Catalog listing
